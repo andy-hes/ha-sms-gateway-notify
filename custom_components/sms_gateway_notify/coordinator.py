@@ -37,7 +37,7 @@ class SmsGatewayDataUpdateCoordinator(DataUpdateCoordinator[dict]):
         timeout = aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT)
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.get(f"{self._base}{STATUS_PATH}", headers=headers) as resp:
+                async with session.get(f"{base}{STATUS_PATH}", headers=headers) as resp:
                     if resp.status == 401:
                         raise UpdateFailed("invalid API key")
                     if resp.status == 403:
