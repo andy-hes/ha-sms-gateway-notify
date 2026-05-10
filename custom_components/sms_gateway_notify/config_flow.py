@@ -77,11 +77,10 @@ class SmsGatewayNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
         return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
-
-
-@callback
-def async_get_options_flow(config_entry):
-    return SmsGatewayNotifyOptionsFlow(config_entry)
+    @staticmethod
+    @callback
+    def async_get_options_flow(config_entry):
+        return SmsGatewayNotifyOptionsFlow(config_entry)
 
 
 class SmsGatewayNotifyOptionsFlow(config_entries.OptionsFlow):

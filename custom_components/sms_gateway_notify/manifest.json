@@ -1,7 +1,7 @@
 {
   "domain": "sms_gateway_notify",
   "name": "SMS Gateway Notify",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "documentation": "https://github.com/andy-hes/thecastle-ha-sms-notify",
   "issue_tracker": "https://github.com/andy-hes/thecastle-ha-sms-notify/issues",
   "codeowners": ["@andy-hes"],
