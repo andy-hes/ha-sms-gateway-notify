@@ -13,6 +13,8 @@ Home Assistant custom integration that adds a `notify` service backed by your SM
 - Creates a diagnostic device/sensor for gateway status
 
 ## Install via HACS (custom repository)
+
+Brand asset is expected at `brand/icon.png` in the repo root (and is also mirrored into the integration folder for Home Assistant UI branding).
 1. Push this repo to GitHub.
 2. In Home Assistant -> HACS -> Integrations -> top-right menu -> Custom repositories.
 3. Add repo URL and category **Integration**.
