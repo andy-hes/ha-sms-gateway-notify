@@ -1,0 +1,12 @@
+send_message:
+  name: Send SMS message
+  description: Send message through configured SMS gateway.
+  fields:
+    message:
+      required: true
+      selector:
+        text:
+    target:
+      required: false
+      selector:
+        object:
