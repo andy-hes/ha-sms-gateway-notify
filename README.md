@@ -9,7 +9,7 @@ Home Assistant custom integration that adds a `notify` service backed by your SM
   - API key
   - Default recipient phone numbers (comma-separated)
 - Setup validation uses the status endpoint, so the API key should allow both `modem_status` and `send`
-- Uses Home Assistant notify service with optional per-message targets
+- Uses Home Assistant `notify.send_message` with one gateway entity + one entity per configured recipient
 - Creates a diagnostic device/sensor for gateway status
 
 ## Install via HACS (custom repository)
@@ -21,29 +21,31 @@ Home Assistant custom integration that adds a `notify` service backed by your SM
 6. Add integration in Settings -> Devices & Services.
 
 ## Usage
-After setup, call the notify service from automations/scripts.
+After setup, use the Home Assistant service `notify.send_message` and target the SMS entities.
 
-Use default recipients from integration config:
+Send to the gateway default recipients:
 ```yaml
 action:
-  - service: notify.sms_gateway_notify
+  - service: notify.send_message
+    target:
+      entity_id: notify.sms_gateway_notify_gateway
     data:
       message: "Varsel fra Home Assistant"
 ```
 
-Override recipients for one message:
+Send to a specific number entity:
 ```yaml
 action:
-  - service: notify.sms_gateway_notify
+  - service: notify.send_message
+    target:
+      entity_id: notify.sms_gateway_notify_40038021
     data:
       message: "Kun til denne mottakeren"
-      target:
-        - "40038021"
 ```
 
-To send to multiple numbers, put them in `target` as a list.
+If you add more phone numbers in the integration options, new notify entities are created for them.
 
-If you change IP, API key, or default recipients later, use the integration options (gear icon) to edit them.
+If you change IP, API key, or recipients later, use the integration options (gear icon) to edit them.
 
 ## Requirements on gateway side
 - Endpoint: `POST /api/external/send`

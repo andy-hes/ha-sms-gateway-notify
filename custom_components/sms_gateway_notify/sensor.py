@@ -35,7 +35,6 @@ class SmsGatewayStatusSensor(CoordinatorEntity[SmsGatewayDataUpdateCoordinator],
     def device_info(self) -> DeviceInfo:
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry.entry_id)},
-            config_entry_id=self._entry.entry_id,
             name="SMS Gateway",
             manufacturer="TheCastle",
             model="SMS gateway",
