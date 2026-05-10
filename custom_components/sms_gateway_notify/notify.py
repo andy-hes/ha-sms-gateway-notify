@@ -78,14 +78,23 @@ class SmsGatewayNotifyEntity(NotifyEntity):
             model="SMS gateway",
         )
 
-    async def async_send_message(self, message: str, title: str | None = None) -> None:
+    async def async_send_message(self, message: str, title: str | None = None, target=None, **kwargs) -> None:
         cfg = self._current_config()
         base = cfg[CONF_BASE_URL].rstrip("/")
         api_key = cfg[CONF_API_KEY]
-        targets = self._recipients()
+
+        raw_targets = target or self._recipients()
+        if isinstance(raw_targets, str):
+            raw_targets = [raw_targets]
+
+        targets: list[str] = []
+        for value in raw_targets:
+            number = str(value).strip()
+            if number and number not in targets:
+                targets.append(number)
 
         if not targets:
-            _LOGGER.error("No recipients configured for SMS message")
+            _LOGGER.error("No recipients configured/provided for SMS message")
             return
 
         text = f"{title}\n{message}".strip() if title else message.strip()

@@ -45,6 +45,19 @@ action:
       message: "Kun til denne mottakeren"
 ```
 
+Send to an ad-hoc number list from the gateway entity:
+```yaml
+action:
+  - service: notify.send_message
+    target:
+      entity_id: notify.sms_gateway_notify_gateway
+    data:
+      message: "Til valgfritt nummer"
+      target:
+        - "41234567"
+        - "40038021"
+```
+
 If you add more phone numbers in the integration options, new notify entities are created for them.
 
 If you change IP, API key, or recipients later, use the integration options (gear icon) to edit them.
