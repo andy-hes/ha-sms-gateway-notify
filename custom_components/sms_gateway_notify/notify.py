@@ -21,18 +21,29 @@ async def async_get_service(hass: HomeAssistant, config, discovery_info=None):
     if entry is None:
         return None
 
-    merged = {**entry.data, **entry.options}
-    return SmsGatewayNotificationService(merged)
+    return SmsGatewayNotificationService(hass, entry_id)
 
 
 class SmsGatewayNotificationService(BaseNotificationService):
-    def __init__(self, cfg: dict) -> None:
-        self._base = cfg[CONF_BASE_URL].rstrip("/")
-        self._api_key = cfg[CONF_API_KEY]
-        self._recipients = [str(n).strip() for n in cfg.get(CONF_RECIPIENTS, []) if str(n).strip()]
+    def __init__(self, hass: HomeAssistant, entry_id: str) -> None:
+        self._hass = hass
+        self._entry_id = entry_id
+
+    def _current_config(self) -> dict:
+        entry = self._hass.config_entries.async_get_entry(self._entry_id)
+        if entry is None:
+            raise RuntimeError("config entry missing")
+        return {**entry.data, **entry.options}
+
+    def _recipients(self) -> list[str]:
+        cfg = self._current_config()
+        return [str(n).strip() for n in cfg.get(CONF_RECIPIENTS, []) if str(n).strip()]
 
     async def async_send_message(self, message: str = "", **kwargs) -> None:
-        raw_targets = kwargs.get(ATTR_TARGET) or self._recipients
+        cfg = self._current_config()
+        base = cfg[CONF_BASE_URL].rstrip("/")
+        api_key = cfg[CONF_API_KEY]
+        raw_targets = kwargs.get(ATTR_TARGET) or self._recipients()
         if isinstance(raw_targets, str):
             raw_targets = [raw_targets]
 
@@ -51,7 +62,7 @@ class SmsGatewayNotificationService(BaseNotificationService):
             return
 
         headers = {
-            "X-API-Key": self._api_key,
+            "X-API-Key": api_key,
             "Content-Type": "application/json",
         }
 
@@ -62,7 +73,7 @@ class SmsGatewayNotificationService(BaseNotificationService):
                 payload = {"number": number, "text": message}
                 try:
                     async with session.post(
-                        f"{self._base}{SEND_PATH}",
+                        f"{base}{SEND_PATH}",
                         headers=headers,
                         json=payload,
                     ) as resp:
@@ -79,4 +90,4 @@ class SmsGatewayNotificationService(BaseNotificationService):
 
     @property
     def targets(self):
-        return {n: n for n in self._recipients}
+        return {n: n for n in self._recipients()}

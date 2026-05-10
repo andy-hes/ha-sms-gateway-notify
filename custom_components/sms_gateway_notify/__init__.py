@@ -5,6 +5,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers import discovery
 
 from .const import DOMAIN
+from .coordinator import SmsGatewayDataUpdateCoordinator
+
+PLATFORMS = ["sensor"]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -12,8 +15,9 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry
-    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
+    coordinator = SmsGatewayDataUpdateCoordinator(hass, entry.entry_id)
+    await coordinator.async_config_entry_first_refresh()
+    hass.data.setdefault(DOMAIN, {})[entry.entry_id] = {"coordinator": coordinator}
     await discovery.async_load_platform(
         hass,
         "notify",
@@ -21,14 +25,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         {"entry_id": entry.entry_id},
         hass.config,
     )
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
-    return True
+    unloaded = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+    if unloaded:
+        hass.data.get(DOMAIN, {}).pop(entry.entry_id, None)
+    return unloaded
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    await async_unload_entry(hass, entry)
-    await async_setup_entry(hass, entry)
+    return None
