@@ -1,12 +1,20 @@
-send_message:
-  name: Send SMS message
-  description: Send message through configured SMS gateway.
+send_sms:
+  name: Send SMS
+  description: Send an SMS to a single number or a comma-separated list of numbers.
   fields:
+    number:
+      required: false
+      selector:
+        text:
+    numbers:
+      required: false
+      selector:
+        text:
+    title:
+      required: false
+      selector:
+        text:
     message:
       required: true
       selector:
         text:
-    target:
-      required: false
-      selector:
-        object:

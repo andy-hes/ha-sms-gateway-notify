@@ -1,6 +1,6 @@
 # SMS Gateway Notify (HACS)
 
-Home Assistant custom integration that adds a `notify` service backed by your SMS gateway API.
+Home Assistant custom integration that adds SMS notify entities plus a direct send service backed by your SMS gateway API.
 
 ## Features
 - Config Flow (UI setup)
@@ -10,6 +10,7 @@ Home Assistant custom integration that adds a `notify` service backed by your SM
   - Default recipient phone numbers (comma-separated)
 - Setup validation uses the status endpoint, so the API key should allow both `modem_status` and `send`
 - Uses Home Assistant `notify.send_message` with one gateway entity + one entity per configured recipient
+- Includes a direct `sms_gateway_notify.send_sms` service for ad-hoc numbers
 - Creates a diagnostic device/sensor for gateway status
 
 ## Install via HACS (custom repository)
@@ -23,7 +24,7 @@ Brand asset is expected at `brand/icon.png` in the repo root (and is also mirror
 6. Add integration in Settings -> Devices & Services.
 
 ## Usage
-After setup, use the Home Assistant service `notify.send_message` and target the SMS entities.
+After setup, use `notify.send_message` for saved SMS entities, or `sms_gateway_notify.send_sms` for free-form numbers.
 
 Send to the gateway default recipients:
 ```yaml
@@ -45,17 +46,22 @@ action:
       message: "Kun til denne mottakeren"
 ```
 
-Send to an ad-hoc number list from the gateway entity:
+Send to an ad-hoc number list:
 ```yaml
 action:
-  - service: notify.send_message
-    target:
-      entity_id: notify.sms_gateway_notify_gateway
+  - service: sms_gateway_notify.send_sms
     data:
+      number: "41234567"
       message: "Til valgfritt nummer"
-      target:
-        - "41234567"
-        - "40038021"
+```
+
+Or multiple numbers:
+```yaml
+action:
+  - service: sms_gateway_notify.send_sms
+    data:
+      numbers: "41234567, 40038021"
+      message: "Til valgfritt nummer"
 ```
 
 If you add more phone numbers in the integration options, new notify entities are created for them.
@@ -71,4 +77,5 @@ If you change IP, API key, or recipients later, use the integration options (gea
 
 ## Notes
 - Phone number validation is done by gateway API.
-- If no `target` is provided in notify call, integration uses configured default recipients.
+- Saved notify entities use configured recipients.
+- The direct `sms_gateway_notify.send_sms` service is for ad-hoc numbers.

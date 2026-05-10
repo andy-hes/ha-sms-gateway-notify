@@ -2,29 +2,16 @@ from __future__ import annotations
 
 import logging
 
-import aiohttp
 from homeassistant.components.notify import NotifyEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_API_KEY, CONF_BASE_URL, CONF_RECIPIENTS, DEFAULT_TIMEOUT, DOMAIN, SEND_PATH
+from .const import CONF_API_KEY, CONF_BASE_URL, CONF_RECIPIENTS, DOMAIN
+from .gateway import async_send_sms, normalize_numbers
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def _normalize_recipients(raw: list[str] | str | None) -> list[str]:
-    if raw is None:
-        return []
-    if isinstance(raw, str):
-        raw = [raw]
-    recipients: list[str] = []
-    for item in raw:
-        number = str(item).strip()
-        if number and number not in recipients:
-            recipients.append(number)
-    return recipients
 
 
 async def async_setup_entry(
@@ -33,7 +20,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     cfg = {**entry.data, **entry.options}
-    recipients = _normalize_recipients(cfg.get(CONF_RECIPIENTS))
+    recipients = normalize_numbers(cfg.get(CONF_RECIPIENTS))
 
     entities: list[SmsGatewayNotifyEntity] = [
         SmsGatewayNotifyEntity(hass, entry.entry_id, name="Gateway", recipient=None)
@@ -67,7 +54,7 @@ class SmsGatewayNotifyEntity(NotifyEntity):
         cfg = self._current_config()
         if self._recipient is not None:
             return [self._recipient]
-        return _normalize_recipients(cfg.get(CONF_RECIPIENTS))
+        return normalize_numbers(cfg.get(CONF_RECIPIENTS))
 
     @property
     def device_info(self) -> DeviceInfo:
@@ -78,52 +65,11 @@ class SmsGatewayNotifyEntity(NotifyEntity):
             model="SMS gateway",
         )
 
-    async def async_send_message(self, message: str, title: str | None = None, target=None, **kwargs) -> None:
+    async def async_send_message(self, message: str, title: str | None = None) -> None:
         cfg = self._current_config()
-        base = cfg[CONF_BASE_URL].rstrip("/")
-        api_key = cfg[CONF_API_KEY]
-
-        raw_targets = target or self._recipients()
-        if isinstance(raw_targets, str):
-            raw_targets = [raw_targets]
-
-        targets: list[str] = []
-        for value in raw_targets:
-            number = str(value).strip()
-            if number and number not in targets:
-                targets.append(number)
-
-        if not targets:
-            _LOGGER.error("No recipients configured/provided for SMS message")
+        try:
+            await async_send_sms(cfg[CONF_BASE_URL], cfg[CONF_API_KEY], self._recipients(), message, title)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.error("SMS send failed: %s", err)
             return
-
-        text = f"{title}\n{message}".strip() if title else message.strip()
-        if not text:
-            _LOGGER.error("Message is empty, skipping SMS send")
-            return
-
-        headers = {"X-API-Key": api_key, "Content-Type": "application/json"}
-        timeout = aiohttp.ClientTimeout(total=DEFAULT_TIMEOUT)
-        failures: list[str] = []
-
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            for number in targets:
-                try:
-                    async with session.post(
-                        f"{base}{SEND_PATH}",
-                        headers=headers,
-                        json={"number": number, "text": text},
-                    ) as resp:
-                        if resp.status >= 400:
-                            body = await resp.text()
-                            failures.append(f"{number} ({resp.status})")
-                            _LOGGER.error("SMS send failed to %s (%s): %s", number, resp.status, body)
-                except Exception as err:  # noqa: BLE001
-                    failures.append(f"{number} (exception)")
-                    _LOGGER.error("SMS send exception to %s: %s", number, err)
-
-        if failures:
-            _LOGGER.warning("SMS send completed with failures: %s", ", ".join(failures))
-            return
-
         self._async_record_notification()

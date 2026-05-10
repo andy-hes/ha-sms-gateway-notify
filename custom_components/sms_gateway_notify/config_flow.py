@@ -4,6 +4,7 @@ import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.data_entry_flow import FlowResult
 
 from .const import (
     CONF_API_KEY,
@@ -37,45 +38,78 @@ async def _validate_gateway(base_url: str, api_key: str) -> str | None:
         return "cannot_connect"
 
 
+def _config_schema(current: dict | None = None) -> vol.Schema:
+    current = current or {}
+    return vol.Schema(
+        {
+            vol.Optional("name", default=current.get("name", DEFAULT_NAME)): str,
+            vol.Required(CONF_BASE_URL, default=current.get(CONF_BASE_URL, "http://192.168.200.52:8091")): str,
+            vol.Required(CONF_API_KEY, default=current.get(CONF_API_KEY, "")): str,
+            vol.Optional(
+                CONF_RECIPIENTS,
+                default=", ".join(current.get(CONF_RECIPIENTS, [])),
+            ): str,
+        }
+    )
+
+
+def _parsed_data(user_input: dict) -> dict:
+    return {
+        CONF_BASE_URL: user_input[CONF_BASE_URL].strip().rstrip("/"),
+        CONF_API_KEY: user_input[CONF_API_KEY].strip(),
+        CONF_RECIPIENTS: _normalize_recipients(user_input.get(CONF_RECIPIENTS, "")),
+    }
+
+
 class SmsGatewayNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     VERSION = 1
 
-    async def async_step_user(self, user_input=None):
+    async def async_step_user(self, user_input: dict | None = None) -> FlowResult:
         errors = {}
         if user_input is not None:
-            base_url = user_input[CONF_BASE_URL].strip().rstrip("/")
-            api_key = user_input[CONF_API_KEY].strip()
-            recipients = _normalize_recipients(user_input.get(CONF_RECIPIENTS, ""))
-
-            if not base_url.startswith(("http://", "https://")):
+            data = _parsed_data(user_input)
+            if not data[CONF_BASE_URL].startswith(("http://", "https://")):
                 errors[CONF_BASE_URL] = "invalid_url"
-            elif not api_key:
+            elif not data[CONF_API_KEY]:
                 errors[CONF_API_KEY] = "required"
             else:
-                err = await _validate_gateway(base_url, api_key)
+                err = await _validate_gateway(data[CONF_BASE_URL], data[CONF_API_KEY])
                 if err:
                     errors["base"] = err
                 else:
-                    await self.async_set_unique_id(base_url)
+                    await self.async_set_unique_id(data[CONF_BASE_URL])
                     self._abort_if_unique_id_configured()
-                    return self.async_create_entry(
-                        title=user_input.get("name") or DEFAULT_NAME,
-                        data={
-                            CONF_BASE_URL: base_url,
-                            CONF_API_KEY: api_key,
-                            CONF_RECIPIENTS: recipients,
-                        },
+                    return self.async_create_entry(title=user_input.get("name") or DEFAULT_NAME, data=data)
+
+        return self.async_show_form(step_id="user", data_schema=_config_schema(), errors=errors)
+
+    async def async_step_reconfigure(self, user_input: dict | None = None) -> FlowResult:
+        reconfigure_entry = self._get_reconfigure_entry()
+        errors = {}
+        if user_input is not None:
+            data = _parsed_data(user_input)
+            if not data[CONF_BASE_URL].startswith(("http://", "https://")):
+                errors[CONF_BASE_URL] = "invalid_url"
+            elif not data[CONF_API_KEY]:
+                errors[CONF_API_KEY] = "required"
+            else:
+                err = await _validate_gateway(data[CONF_BASE_URL], data[CONF_API_KEY])
+                if err:
+                    errors["base"] = err
+                else:
+                    await self.async_set_unique_id(reconfigure_entry.unique_id)
+                    self._abort_if_unique_id_mismatch()
+                    return self.async_update_reload_and_abort(
+                        reconfigure_entry,
+                        data_updates={"name": user_input.get("name") or DEFAULT_NAME, **data},
                     )
 
-        schema = vol.Schema(
-            {
-                vol.Optional("name", default=DEFAULT_NAME): str,
-                vol.Required(CONF_BASE_URL, default="http://192.168.200.52:8091"): str,
-                vol.Required(CONF_API_KEY): str,
-                vol.Optional(CONF_RECIPIENTS, default=""): str,
-            }
+        current = {**reconfigure_entry.data, **reconfigure_entry.options}
+        return self.async_show_form(
+            step_id="reconfigure",
+            data_schema=_config_schema(current),
+            errors=errors,
         )
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
     @callback
@@ -83,43 +117,24 @@ class SmsGatewayNotifyConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         return SmsGatewayNotifyOptionsFlow(config_entry)
 
 
-class SmsGatewayNotifyOptionsFlow(config_entries.OptionsFlow):
+class SmsGatewayNotifyOptionsFlow(config_entries.OptionsFlowWithReload):
     def __init__(self, config_entry):
         self.config_entry = config_entry
 
-    async def async_step_init(self, user_input=None):
+    async def async_step_init(self, user_input: dict | None = None) -> FlowResult:
         errors = {}
         if user_input is not None:
-            base_url = user_input[CONF_BASE_URL].strip().rstrip("/")
-            api_key = user_input[CONF_API_KEY].strip()
-            recipients = _normalize_recipients(user_input.get(CONF_RECIPIENTS, ""))
-            if not base_url.startswith(("http://", "https://")):
+            data = _parsed_data(user_input)
+            if not data[CONF_BASE_URL].startswith(("http://", "https://")):
                 errors[CONF_BASE_URL] = "invalid_url"
-            elif not api_key:
+            elif not data[CONF_API_KEY]:
                 errors[CONF_API_KEY] = "required"
             else:
-                err = await _validate_gateway(base_url, api_key)
+                err = await _validate_gateway(data[CONF_BASE_URL], data[CONF_API_KEY])
                 if err:
                     errors["base"] = err
                 else:
-                    return self.async_create_entry(
-                        title="",
-                        data={
-                            CONF_BASE_URL: base_url,
-                            CONF_API_KEY: api_key,
-                            CONF_RECIPIENTS: recipients,
-                        },
-                    )
+                    return self.async_create_entry(title="", data={"name": user_input.get("name") or DEFAULT_NAME, **data})
 
         current = {**self.config_entry.data, **self.config_entry.options}
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_BASE_URL, default=current.get(CONF_BASE_URL, "")): str,
-                vol.Required(CONF_API_KEY, default=current.get(CONF_API_KEY, "")): str,
-                vol.Optional(
-                    CONF_RECIPIENTS,
-                    default=", ".join(current.get(CONF_RECIPIENTS, [])),
-                ): str,
-            }
-        )
-        return self.async_show_form(step_id="init", data_schema=schema, errors=errors)
+        return self.async_show_form(step_id="init", data_schema=_config_schema(current), errors=errors)
