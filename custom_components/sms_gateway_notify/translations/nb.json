@@ -14,7 +14,10 @@
     },
     "error": {
       "invalid_url": "Ugyldig URL",
-      "required": "Påkrevd felt"
+      "required": "Påkrevd felt",
+      "cannot_connect": "Kunne ikke koble til gateway",
+      "invalid_auth": "Ugyldig API-nøkkel",
+      "insufficient_scope": "API-nøkkel mangler modem_status-scope"
     },
     "abort": {
       "already_configured": "Denne gatewayen er allerede konfigurert"

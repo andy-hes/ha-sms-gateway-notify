@@ -13,6 +13,7 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})[entry.entry_id] = entry
+    entry.async_on_unload(entry.add_update_listener(async_reload_entry))
     await discovery.async_load_platform(
         hass,
         "notify",

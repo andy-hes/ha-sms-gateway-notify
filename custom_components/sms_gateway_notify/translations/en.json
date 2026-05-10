@@ -14,7 +14,10 @@
     },
     "error": {
       "invalid_url": "Invalid URL",
-      "required": "Required field"
+      "required": "Required field",
+      "cannot_connect": "Cannot connect to gateway",
+      "invalid_auth": "Invalid API key",
+      "insufficient_scope": "API key lacks modem_status scope"
     },
     "abort": {
       "already_configured": "This gateway is already configured"

@@ -6,7 +6,7 @@ Home Assistant custom integration that adds a `notify` service backed by your SM
 - Config Flow (UI setup)
 - Ask for:
   - Gateway URL/IP (example: `http://192.168.200.52:8091`)
-  - API key
+  - API key (med `send` + `modem_status` scope)
   - Default recipient phone numbers (comma-separated)
 - Uses Home Assistant notify service with optional per-message targets
 
@@ -44,6 +44,7 @@ action:
 - Header: `X-API-Key`
 - JSON payload: `{ "number": "40038021", "text": "..." }`
 - API key must include `send` scope.
+- Setup validation calls `/api/external/status`, so key should also include `modem_status` scope.
 
 ## Notes
 - Phone number validation is done by gateway API.
