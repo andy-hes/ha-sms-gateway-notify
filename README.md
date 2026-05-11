@@ -39,7 +39,7 @@ Send to a specific number entity:
 action:
   - service: notify.send_message
     target:
-      entity_id: notify.sms_gateway_notify_40038021
+      entity_id: notify.sms_gateway_notify_*number*
     data:
       message: "Kun til denne mottakeren"
 ```
@@ -49,7 +49,7 @@ Send to an ad-hoc number list:
 action:
   - service: sms_gateway_notify.send_sms
     data:
-      number: "41234567"
+      number: "*number*"
       message: "Til valgfritt nummer"
 ```
 
@@ -58,7 +58,7 @@ Or multiple numbers:
 action:
   - service: sms_gateway_notify.send_sms
     data:
-      numbers: "41234567, 40038021"
+      numbers: "*number*, *number*"
       message: "Til valgfritt nummer"
 ```
 
@@ -69,7 +69,7 @@ If you change IP, API key, or recipients later, use the integration options (gea
 ## Requirements on gateway side
 - Endpoint: `POST /api/external/send`
 - Header: `X-API-Key`
-- JSON payload: `{ "number": "40038021", "text": "..." }`
+- JSON payload: `{ "number": "*number*", "text": "..." }`
 - API key must include `send` scope.
 - Setup validation calls `/api/external/status`, so key should also include `modem_status` scope.
 
