@@ -15,13 +15,11 @@ Home Assistant custom integration that adds SMS notify entities plus a direct se
 
 ## Install via HACS (custom repository)
 
-Brand asset is expected at `brand/icon.png` in the repo root (and is also mirrored into the integration folder for Home Assistant UI branding).
-1. Push this repo to GitHub.
-2. In Home Assistant -> HACS -> Integrations -> top-right menu -> Custom repositories.
-3. Add repo URL and category **Integration**.
-4. Install **SMS Gateway Notify**.
-5. Restart Home Assistant.
-6. Add integration in Settings -> Devices & Services.
+1. In Home Assistant -> HACS -> Integrations -> top-right menu -> Custom repositories.
+2. Add repo URL and category **Integration**.
+3. Install **SMS Gateway Notify**.
+4. Restart Home Assistant.
+5. Add integration in Settings -> Devices & Services.
 
 ## Usage
 After setup, use `notify.send_message` for saved SMS entities, or `sms_gateway_notify.send_sms` for free-form numbers.
