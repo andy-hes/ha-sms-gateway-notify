@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import logging
 import aiohttp
 import voluptuous as vol
 from homeassistant import config_entries
@@ -15,6 +17,8 @@ from .const import (
     DOMAIN,
     STATUS_PATH,
 )
+
+_LOGGER = logging.getLogger(__name__)
 
 
 def _normalize_recipients(raw: str) -> list[str]:
@@ -34,7 +38,12 @@ async def _validate_gateway(base_url: str, api_key: str) -> str | None:
                 if resp.status == 403:
                     return "insufficient_scope"
                 return "cannot_connect"
-    except Exception:
+    except asyncio.TimeoutError:
+        return "cannot_connect"
+    except aiohttp.ClientError:
+        return "cannot_connect"
+    except Exception as err:
+        _LOGGER.debug("Gateway validation error: %s", err)
         return "cannot_connect"
 
 
@@ -43,8 +52,8 @@ def _config_schema(current: dict | None = None) -> vol.Schema:
     return vol.Schema(
         {
             vol.Optional("name", default=current.get("name", DEFAULT_NAME)): str,
-            vol.Required(CONF_BASE_URL, default=current.get(CONF_BASE_URL, "http://192.168.200.52:8091")): str,
-            vol.Required(CONF_API_KEY, default=current.get(CONF_API_KEY, "")): str,
+            vol.Optional(CONF_BASE_URL, default=current.get(CONF_BASE_URL, "http://192.168.200.52:8091")): str,
+            vol.Optional(CONF_API_KEY, default=current.get(CONF_API_KEY, "")): str,
             vol.Optional(
                 CONF_RECIPIENTS,
                 default=", ".join(current.get(CONF_RECIPIENTS, [])),

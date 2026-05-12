@@ -8,7 +8,13 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import CONF_API_KEY, CONF_BASE_URL, CONF_RECIPIENTS, DOMAIN
+from .const import (
+    CONF_API_KEY,
+    CONF_BASE_URL,
+    CONF_RECIPIENTS,
+    DEFAULT_MANUFACTURER,
+    DOMAIN,
+)
 from .gateway import async_send_sms, normalize_numbers
 
 _LOGGER = logging.getLogger(__name__)
@@ -61,15 +67,24 @@ class SmsGatewayNotifyEntity(NotifyEntity):
         return DeviceInfo(
             identifiers={(DOMAIN, self._entry_id)},
             name="SMS Gateway",
-            manufacturer="TheCastle",
+            manufacturer=DEFAULT_MANUFACTURER,
             model="SMS gateway",
         )
 
     async def async_send_message(self, message: str, title: str | None = None) -> None:
-        cfg = self._current_config()
         try:
-            await async_send_sms(cfg[CONF_BASE_URL], cfg[CONF_API_KEY], self._recipients(), message, title)
-        except Exception as err:  # noqa: BLE001
+            cfg = self._current_config()
+        except RuntimeError as err:
             _LOGGER.error("SMS send failed: %s", err)
             return
+        
+        try:
+            await async_send_sms(cfg[CONF_BASE_URL], cfg[CONF_API_KEY], self._recipients(), message, title)
+        except ValueError as err:
+            _LOGGER.error("SMS send failed: invalid input: %s", err)
+            return
+        except RuntimeError as err:
+            _LOGGER.error("SMS send failed: one or more recipients failed: %s", err)
+            return
+        
         self._async_record_notification()

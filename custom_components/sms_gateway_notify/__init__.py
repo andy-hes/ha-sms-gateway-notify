@@ -16,11 +16,8 @@ async def async_setup(hass: HomeAssistant, config: dict) -> bool:
         if not entries:
             return
 
-        if len(entries) > 1:
-            # keep it simple for now: use the first loaded entry
-            entry_id, data = entries[0]
-        else:
-            entry_id, data = entries[0]
+        # Use the first loaded entry
+        entry_id, data = entries[0]
 
         entry = hass.config_entries.async_get_entry(entry_id)
         if entry is None:

@@ -4,5 +4,6 @@ CONF_API_KEY = "api_key"
 CONF_RECIPIENTS = "recipients"
 DEFAULT_NAME = "SMS Gateway"
 DEFAULT_TIMEOUT = 15
+DEFAULT_MANUFACTURER = "TheCastle"
 STATUS_PATH = "/api/external/status"
 SEND_PATH = "/api/external/send"

@@ -24,7 +24,6 @@ async def async_setup_entry(
 class SmsGatewayStatusSensor(CoordinatorEntity[SmsGatewayDataUpdateCoordinator], SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_name = "Gateway status"
-    _attr_unique_id = None
 
     def __init__(self, coordinator: SmsGatewayDataUpdateCoordinator, entry: ConfigEntry) -> None:
         super().__init__(coordinator)
@@ -41,7 +40,7 @@ class SmsGatewayStatusSensor(CoordinatorEntity[SmsGatewayDataUpdateCoordinator],
         )
 
     @property
-    def native_value(self):
+    def native_value(self) -> str | None:
         return self.coordinator.data.get("state") if self.coordinator.data else None
 
     @property
